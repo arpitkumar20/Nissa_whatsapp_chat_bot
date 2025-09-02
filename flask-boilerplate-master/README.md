@@ -59,18 +59,13 @@ Project Structure
           └── placeholder.home.html
   ```
 
-### Screenshots
-
-![Pages](https://github.com/realpython/flask-boilerplate/blob/master/screenshots/pages.png)
-
-![Forms](https://github.com/realpython/flask-boilerplate/blob/master/screenshots/forms.png)
 
 
 ### Quick Start
 
 1. Clone the repo
   ```
-  $ git clone https://github.com/realpython/flask-boilerplate.git
+  $ git clone "link of repo"
   $ cd flask-boilerplate
   ```
 
@@ -94,20 +89,6 @@ Project Structure
 
 
 Deploying to Heroku
-------
-
-1. Signup for [Heroku](https://api.heroku.com/signup)
-2. Login to Heroku and download the [Heroku Toolbelt](https://toolbelt.heroku.com/)
-3. Once installed, open your command-line and run the following command - `heroku login`. Then follow the prompts:
-
-  ```
-  Enter your Heroku credentials.
-  Email: michael@mherman.org
-  Password (typing will be hidden):
-  Could not find an existing public key.
-  Would you like to generate one? [Yn]
-  Generating new SSH public key.
-  Uploading ssh public key /Users/michaelherman/.ssh/id_rsa.pub
   ```
 
 4. Activate your virtualenv
