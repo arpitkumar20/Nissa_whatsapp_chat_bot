@@ -52,43 +52,13 @@ nisaa-chatbot/
 * **DevOps/Infra** → `infra/` (Docker, K8s, CI/CD, monitoring)
 * **Testing** → `tests/unit`, `tests/integration`, `tests/performance`, `tests/security`
 
-
-Perfect 👍
-Here’s the **complete single `README.md` file** — copy-paste this into your project root and you’ll have the **full structure, all code, configs, and setup guide** in one polished document.
-
 ---
 
 ```markdown
-# 📂 Nisaa Chatbot — Enterprise Flask Boilerplate with RAG + Vector DB
-
-This is a **production-ready boilerplate** for building enterprise chatbots using **Flask**, **LangChain RAG**, and a **vector database (FAISS)**.  
-It’s designed for **scalability, modularity, and enterprise integration** (HMS, hotel booking, WhatsApp, Admin Panel).  
-
----
-
-## 🚀 Features
-- **Flask API** with Blueprint modular structure  
-- **Vector Search + RAG** using FAISS + OpenAI embeddings  
-- **WhatsApp Webhook Stub** (Twilio / Meta integration ready)  
-- **Admin Ingestion API** with website crawler  
-- **Booking API** with Redis-backed session state  
-- **Docker & docker-compose** for local dev  
-- **.env configuration** with secrets management  
-- Extendable for **HMS** (hospital) and **hotel booking** integrations  
-
----
-
-## 📂 Project Structure
-```
-
 
 ````
-
----
-
-## 📑 Code Files
-
 ### 🔹 `backend/app/__init__.py`
+
 ```python
 from flask import Flask
 from .core.config import Config
@@ -119,7 +89,7 @@ def create_app():
         return {"ready": True}, 200
 
     return app
-````
+```
 
 ---
 
