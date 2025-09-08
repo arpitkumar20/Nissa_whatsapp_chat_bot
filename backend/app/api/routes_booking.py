@@ -1,137 +1,145 @@
-# from flask import Blueprint, request, jsonify
-# from ..models.booking import BookingRequest, BookingConfirmation
+import pinecone
+from pinecone import (
+    Pinecone,
+    ServerlessSpec,
+    CloudProvider,
+    AwsRegion,
+    VectorType
+)
 
-# bp = Blueprint("booking", __name__)
+import numpy as np
+import requests
 
-# @bp.post("/create")
-# def create_booking():
-#     data = request.get_json(force=True)
-#     br = BookingRequest.model_validate(data)
-#     # mock integration; replace with HMS/hotel API call
-#     confirmation = BookingConfirmation(
-#         booking_id="BK-" + br.customer_phone[-4:],
-#         status="CONFIRMED",
-#         provider="mock",
-#         details=br.model_dump()
-#     )
-#     return jsonify(confirmation.model_dump())
-
-
-# import os
-# from pinecone import Pinecone
-
-# # ----------------------------
-# # Load env variables
-# # ----------------------------
-
-# PINECONE_API_KEY= "pcsk_5ZJEVn_K6FrjVje2XZnYuqxyhfJVYDVKuKg5A6RZc4UWaPKNzARdQxKK82o2xNc82paxBk"
+PINECONE_API_KEY= "pcsk_5ZJEVn_K6FrjVje2XZnYuqxyhfJVYDVKuKg5A6RZc4UWaPKNzARdQxKK82o2xNc82paxBk"
 # PINECONE_ENV="us-west1-gcp"
-# PINECONE_INDEX="nisaa-knowledge"
-# # ----------------------------
-# # Connect to Pinecone
-# # ----------------------------
-# pc = Pinecone(api_key=PINECONE_API_KEY)
+PINECONE_ENV = "us-east-1"
+PINECONE_INDEX="nisaa-knowledge"
+NAMESPACE="hospital"
+GOOGLE_API_KEY="AIzaSyBT7ulr-_i-O1Z42rKLDr8ZJJjh9v52StM"
+GEMINI_MODEL="gemini-1.5-pro"
+# EMBEDDING_MODEL="models/embedding-001"
+EMBEDDING_MODEL="models/llama-text-embed-v2"
+
+
+# # Initialize Pinecone
+# pc = Pinecone(api_key=PINECONE_API_KEY, environment=PINECONE_ENV)
+
+# # Check available indexes to ensure correct setup
+# indexes = pc.list_indexes()
+# print(f"Available Indexes: {indexes}")
+
+# # Connect to your Pinecone index
 # index = pc.Index(PINECONE_INDEX)
 
-# # ----------------------------
-# # Example 1: Query with embedding
-# # ----------------------------
-# # Suppose you have an embedding vector from Gemini (replace with real embedding)
-# example_vector = [0.01] * 768  # adjust length to match your index dimension
+# # Step 1: Generate embedding from GenAI (Gemini API)
+# query_text = "give me all doctors list"
+# # genai_url = "https://api.gemini.google.com/v1/embed/text"
 
-# query_result = index.query(
-#     vector=example_vector,
-#     top_k=5,          # number of nearest matches
-#     include_values=True,
+# # genai_url = f"https://generativelanguage.googleapis.com/v1beta2/{EMBEDDING_MODEL}:embedText"
+# genai_url = f"https://generativelanguage.googleapis.com/v1beta2/{EMBEDDING_MODEL}:embedText"
+
+
+# headers = {
+#     "Content-Type": "application/json"
+# }
+
+# payload = {
+#     "text": query_text
+# }
+
+# params = {
+#     "key": GOOGLE_API_KEY
+# }
+
+# response = requests.post(genai_url, headers=headers, json=payload, params=params)
+# response.raise_for_status()
+
+# embedding_data = response.json()
+# query_vector = embedding_data['embedding']  # Correct key path for embedding result
+
+# # Step 2: Query Pinecone Vector DB
+# query_response = index.query(
+#     vector=query_vector,
+#     top_k=5,
+#     namespace=NAMESPACE,
 #     include_metadata=True
 # )
 
-# print("🔎 Query Results:")
-# for match in query_result["matches"]:
-#     print(f"ID: {match['id']}")
-#     print(f"Score: {match['score']}")
-#     print(f"Metadata: {match.get('metadata')}")
-#     print("------")
-
-# # ----------------------------
-# # Example 2: Fetch by IDs (already stored data)
-# # ----------------------------
-# fetch_result = index.fetch(ids=["doc1", "doc2"])  # replace with real IDs
-# print("📦 Fetch Results:", fetch_result)
+# # Print results
+# print("Query Results:")
+# for match in query_response['matches']:
+#     print(f"ID: {match['id']}, Score: {match['score']}, Metadata: {match.get('metadata')}")
 
 
 
 
-
-
-# from pinecone import Pinecone
-
-# # Initialize Pinecone
-# pc = Pinecone(api_key=PINECONE_API_KEY)
-
-# # Connect to your index
-# index_name = PINECONE_INDEX
-# index = pc.Index(index_name)
-
-# # List of IDs to fetch
-# ids_to_fetch = ["id1", "id2", "id3"]
-
-# # Fetch the vectors
-# response = index.fetch(ids=ids_to_fetch)
-
-# # Print fetched vectors
-# print(response)
+import google.generativeai as genai
+from pinecone import Pinecone
+import os
 
 
 
 
+# ------------------------------
+# Initialize GenAI SDK
+# ------------------------------
+genai.configure(api_key=GOOGLE_API_KEY)
 
+def get_embedding(text: str):
+    """
+    Returns a list[float] embedding for `text` using the configured embedding model.
+    """
+    try:
+        resp = genai.embed_content(model="models/embedding-001", content=text)
+        # Different response shapes can occur; try common keys
+        if isinstance(resp, dict):
+            if "embedding" in resp:
+                return resp["embedding"]
+            if "embeddings" in resp and resp["embeddings"]:
+                # sometimes returns list of embeddings
+                return resp["embeddings"][0]
+        # If resp is an object with attributes
+        if hasattr(resp, "embedding"):
+            return resp.embedding
+        # fallback
+        raise ValueError(f"No embedding found in response:+{resp}")
+    except Exception as e:
+        raise
 
+# ------------------------------
+# Step 1: Generate Embedding
+# ------------------------------
+query_text = "give me all doctors list"
 
+# model = genai.GenerativeModel(EMBEDDING_MODEL)
 
+# response = model.t .embed_text(query_text)
+query_vector = get_embedding(query_text)  # embedding vector list
+# ------------------------------
+# Step 2: Initialize Pinecone
+# ------------------------------
+pc = Pinecone(api_key=PINECONE_API_KEY, environment=PINECONE_ENV)
 
+# Check available indexes
+indexes = pc.list_indexes()
+print(f"Available Indexes: {indexes}")
 
+# Connect to Pinecone index
+index = pc.Index(PINECONE_INDEX)
 
+# ------------------------------
+# Step 3: Query Pinecone
+# ------------------------------
+query_response = index.query(
+    vector=query_vector,
+    top_k=5,
+    namespace=NAMESPACE,
+    include_metadata=True
+)
 
-
-
-# from pinecone import Pinecone
-# import numpy as np
-
-# # Initialize Pinecone
-# pc = Pinecone(api_key=PINECONE_API_KEY)
-
-# # Connect to your index
-# index_name = PINECONE_INDEX
-# index = pc.Index(index_name)
-
-# # Get index statistics
-# stats = index.describe_index_stats()
-
-# # Pinecone returns stats as a dict
-# # Example: {'namespaces': {'': {'vector_count': 123}}, 'dimension': 1536}
-# num_dimensions = stats["dimension"]
-# total_vector_count = sum(ns["vector_count"] for ns in stats["namespaces"].values())
-
-# # Create a dummy query vector (zeros)
-# dummy_vector = np.zeros(num_dimensions).tolist()
-
-# # Query with a high top_k (max 10000 allowed)
-# query_results = index.query(
-#     vector=dummy_vector,
-#     top_k=5,
-#     include_values=True,
-#     include_metadata=True,
-# )
-
-# for match in query_results["matches"]:
-#     print(">>>>>>>>>>>>>>",match)
-
-
-# # Extract IDs
-# retrieved_ids = [match["id"] for match in query_results["matches"]]
-
-# # Fetch vectors (in batches if needed)
-# if retrieved_ids:
-#     fetched_vectors = index.fetch(ids=retrieved_ids)
-#     print(fetched_vectors)
+# ------------------------------
+# Step 4: Print results
+# ------------------------------
+print("Query Results:")
+for match in query_response['matches']:
+    print(f"ID: {match['id']}, Score: {match['score']}, Metadata: {match.get('metadata')}")

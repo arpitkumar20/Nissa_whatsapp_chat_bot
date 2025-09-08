@@ -2,6 +2,8 @@ pip>=24.0
 setuptools>=68.0.0
 wheel>=0.41.0
 flask==3.0.0
+genai==2.1.0
+langchain-google-genai==2.1.10
 # gunicorn==21.2.0
 # pydantic==2.7.4
 # python-dotenv==1.0.1

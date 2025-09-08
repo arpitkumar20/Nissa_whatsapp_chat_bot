@@ -11,6 +11,9 @@ def send_whatsapp_message(phone_number, message) -> dict:
     """
     Send a WhatsApp session message using the WATI API.
     """
+    if not isinstance(message, str):
+        # Convert to string if a dict or other type is passed
+        message = str(message)
     # URL encode the message
     encoded_message = unquote(message)
 
@@ -42,7 +45,33 @@ def get_whatsapp_messages(phone_number) -> dict:
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
-            return response.json()   # Parsed JSON response
+            if response.status_code == 200:
+                # Parse the JSON response
+                data = response.json()
+                # Filter only user messages
+                all_items = data.get("messages", {}).get("items", [])
+
+                user_messages = [
+                    {
+                        "conversationId": item.get("conversationId"),
+                        "id": item.get("id"),
+                        "owner": item.get("owner"),
+                        "status": item.get("statusString"),
+                        "text": item.get("text"),
+                        "ticketId": item.get("ticketId"),
+                        "timestamp": item.get("timestamp")
+                    }
+                    for item in all_items
+                    if item.get("eventType") == "message" and item.get("type") == "text" and item.get("owner") is False
+                ]
+
+                if user_messages:
+                    # Get the latest user message by timestamp
+                    last_message = max(user_messages, key=lambda x: int(x['timestamp']))
+                    return {"last_user_message": last_message}
+
+                return {"last_user_message": None}
+            # return response.json()   # Parsed JSON response
     except requests.exceptions.RequestException as e:
         return {"error": str(e)}
 
