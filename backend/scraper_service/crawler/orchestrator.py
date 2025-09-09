@@ -1,8 +1,9 @@
 import importlib
 from config.generate_site_config import generate_configs
 from crawler.crawler_core import CrawlEngine
-from embeddings.service import embed_text
+from scraper_service.embeddings.service_test import embed_text
 from vectordb.client import vector_db_upsert
+
 
 
 START_SITES = [
@@ -33,12 +34,12 @@ def run_scraper(site_key, cfg):
         except Exception as e:
             print("Upsert/embed error:", e)
 
-def main():
-    for key, cfg in SITE_CONFIGS.items():
-        try:
-            run_scraper(key, cfg)
-        except Exception as e:
-            print("Error running scraper for", key, e)
+# def main():
+#     for key, cfg in SITE_CONFIGS.items():
+#         try:
+#             run_scraper(key, cfg)
+#         except Exception as e:
+#             print("Error running scraper for", key, e)
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

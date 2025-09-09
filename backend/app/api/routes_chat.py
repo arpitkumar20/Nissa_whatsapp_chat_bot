@@ -3,7 +3,7 @@ import logging
 from flask import Blueprint, request, jsonify
 from app.services.wati_service import send_whatsapp_message , get_whatsapp_messages
 from app.services.vectordb_retrive import query_pinecone
-from app.services.genai_response import handle_user_query
+# from app.services.genai_response import handle_user_query
 
 # Configure logging
 logging.basicConfig(
@@ -77,16 +77,17 @@ def receive_message():
 
         if last_user_message:
             logger.info("Querying Pinecone with last_user_message")
-            query_response = query_pinecone(last_user_message)
+            # query_response = query_pinecone(last_user_message)
             
-            logger.info("Generating GenAI response based on Pinecone query")
-            genai_response = handle_user_query(query_response)
+            # logger.info("Generating GenAI response based on Pinecone query")
+            # # genai_response = handle_user_query(query_response)
             
-            logger.info("Sending WhatsApp message to user phone_number")
-            app_result = send_whatsapp_message(
-                phone_number="919669092627",
-                message=genai_response.get('answer')
-            )
+            # logger.info("Sending WhatsApp message to user phone_number")
+            # app_result = send_whatsapp_message(
+            #     phone_number="919669092627",
+            #     message=genai_response.get('answer')
+            # )
+            app_result = None
             logger.info("WhatsApp message send result: %s", app_result)
         else:
             logger.warning("Skipping Pinecone query and GenAI response since last_user_message is empty")

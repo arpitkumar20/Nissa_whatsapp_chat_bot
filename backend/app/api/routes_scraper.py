@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
-from app.services.web_scraper import scracper_fun
+from app.services.web_scraper import scraper_fun
+from scraper_service.crawler.orchestrator import main as orchestrator_main
 
 
 scraper_bp = Blueprint("scrap", __name__)
@@ -13,5 +14,6 @@ def scraper():
     if not site_url:
         return jsonify({"error": "Missing required fields (site_url)"}), 400
 
-    result = scracper_fun(site_url)
+    # result = scracper_fun(site_url)
+    result = scraper_fun(site_url)
     return jsonify(result)
