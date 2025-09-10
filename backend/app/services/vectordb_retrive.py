@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 import google.generativeai as genai
 from pinecone import Pinecone
@@ -39,80 +40,96 @@ logger = logging.getLogger(__name__)
 # ------------------------------
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# ------------------------------
-# Step 2: Embedding function
-# ------------------------------
+
+def clean_text(text: str) -> str:
+    """
+    Clean input text by removing extra spaces, newlines, and non-breaking spaces.
+    """
+    if not isinstance(text, str):
+        return text
+
+    # Replace newlines and non-breaking spaces with a single space
+    cleaned = re.sub(r'[\n\xa0]+', ' ', text)
+
+    # Collapse multiple spaces into one
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+
+    return cleaned
+
+
 def generate_embedding(text: str, model: str = EMBEDDING_MODEL) -> list[float]:
     """
-    Generate embedding vector for a given text using GenAI.
+    Generate embedding vector for a given text using GenAI or Pinecone inference.
+    Ensures correct embedding model is used matching Pinecone index.
     """
     try:
         logger.info("Generating embedding for text: %s", text)
+
+        # Use GenAI embedding model configured for 768-dim output
         resp = genai.embed_content(model=model, content=text)
-        
-        if isinstance(resp, dict):
-            if "embedding" in resp:
-                return resp["embedding"]
-            if "embeddings" in resp and resp["embeddings"]:
-                return resp["embeddings"][0]
-        if hasattr(resp, "embedding"):
-            return resp.embedding
 
-        raise ValueError(f"No embedding found in response: {resp}")
-    except Exception as e:
-        logger.error("Error generating embedding: %s", e)
-        raise
+        # Extract embedding vector safely
+        if isinstance(resp, dict) and "embedding" in resp:
+            embedding_vector = resp["embedding"]
+        elif isinstance(resp, dict) and "embeddings" in resp:
+            embedding_vector = resp["embeddings"][0]
+        else:
+            raise ValueError("Unexpected embedding response format.")
 
-# ------------------------------
-# Step 3: Query Pinecone function
-# ------------------------------
-def query_pinecone(query_text: str, top_k: int = 5, namespace: str = NAMESPACE) -> list[dict]:
-    """
-    Generate embedding for `query_text` and query Pinecone index.
-    Returns a list of matching items with score and metadata.
-    """
-    try:
-        logger.info("Starting Pinecone query for text: %s", query_text)
-        
-        # Generate embedding
-        query_vector = generate_embedding(query_text)
-        logger.info("Embedding generated successfully. Vector length: %d", len(query_vector))
-
-        # Initialize Pinecone
-        pc = Pinecone(api_key=PINECONE_API_KEY, environment=PINECONE_ENV)
-        index = pc.Index(PINECONE_INDEX)
-        logger.info("Connected to Pinecone index: %s", PINECONE_INDEX)
-
-        # Query Pinecone
-        query_response = index.query(
-            vector=query_vector,
-            top_k=top_k,
-            namespace=namespace,
-            include_metadata=True
-        )
-
-        results = []
-        for match in query_response.get('matches', []):
-            result_dict = {
-                "id": match['id'],
-                "score": match['score'],
-                **match.get('metadata', {})
-            }
-            results.append(result_dict)
-
-        logger.info("Query returned %d results", len(results))
-        return results
+        logger.info("Embedding generated successfully. Length: %d", len(embedding_vector))
+        return embedding_vector
 
     except Exception as e:
-        logger.error("Error querying Pinecone: %s", e)
+        logger.error("Error generating embedding: %s", str(e))
         raise
+
+
+def query_pinecone_index(query_text: str, top_k: int = 3, namespace: str = NAMESPACE) -> list[dict]:
+    """
+    Generate embedding and query Pinecone index for top-k similar items.
+    """
+    query_vector = generate_embedding(query_text)
+
+    # Validate vector dimension
+    if len(query_vector) != 768:
+        raise ValueError(f"Embedding dimension mismatch: Expected 768, got {len(query_vector)}")
+
+    logger.info("Connecting to Pinecone index: %s", PINECONE_INDEX)
+    pc = Pinecone(api_key=PINECONE_API_KEY, environment=PINECONE_ENV)
+    index = pc.Index(PINECONE_INDEX)
+
+    query_response = index.query(
+        vector=query_vector,
+        top_k=top_k,
+        namespace=namespace,
+        include_values=False,
+        include_metadata=True
+    )
+
+    results = []
+    for match in query_response.get('matches', []):
+        metadata = match.get('metadata', {})
+
+        # Clean all metadata fields
+        cleaned_metadata = {k: clean_text(v) for k, v in metadata.items()}
+
+        result_dict = {
+            "id": clean_text(match['id']),
+            "score": match['score'],
+            **cleaned_metadata
+        }
+
+        results.append(result_dict)
+
+    logger.info("Query returned %d cleaned results", len(results))
+    return results
 
 # ------------------------------
 # Step 4: Run query
 # ------------------------------
 # if __name__ == "__main__":
 #     query_text = "give me only one cancer specialist doctor name"
-#     results = query_pinecone(query_text)
+#     results = query_pinecone_index(query_text)
     
 #     print("Query Results:")
 #     for r in results:

@@ -455,6 +455,11 @@ if __name__ == "__main__":
     main()
 ```
 
+# NGROK
+Domain : aeronautic-showier-marquitta.ngrok-free.app
+ngrok http 5004 --url aeronautic-showier-marquitta.ngrok-free.app
+ngrok http --url=aeronautic-showier-marquitta.ngrok-free.app 5004
+
 ---
 
 ### 🔹 `backend/Dockerfile`
