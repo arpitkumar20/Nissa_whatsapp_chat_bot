@@ -1,8 +1,8 @@
+import mimetypes
 import os
 import requests
 import logging
 from urllib.parse import unquote
-
 
 # Load environment variables
 API_KEY = os.getenv("API_KEY")
@@ -17,8 +17,6 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-
 
 def send_whatsapp_message_v2(phone_number: str, message: str) -> dict:
     """
@@ -49,6 +47,46 @@ def send_whatsapp_message_v2(phone_number: str, message: str) -> dict:
             return {"error": f"Status code {response.status_code}", "response": response.text}
     except requests.exceptions.RequestException as e:
         logger.exception(f"Exception occurred while sending message : {e}")
+        return {"error": str(e)}
+
+
+def send_whatsapp_image_v2(phone_number: str, image_path: str, caption: str) -> dict:
+    url = f"{BASE_URL}/{TENANT_ID}/api/v1/sendSessionFile/{phone_number}"
+    params = {
+        "caption": caption,
+        "channelPhoneNumber": CHANNEL_NUMBER
+    }
+    headers = {
+        'accept': '*/*',
+        'Authorization': f'Bearer {API_KEY}'
+    }
+
+    mime_type, _ = mimetypes.guess_type(image_path)
+    if mime_type is None:
+        mime_type = "application/octet-stream"
+
+    logger.info(f"Sending file '{image_path}' (type: {mime_type}) to {phone_number}")
+
+    try:
+        with open(image_path, 'rb') as file_obj:
+            files = [
+                ('file', (image_path.split('/')[-1], file_obj, mime_type))
+            ]
+            response = requests.post(url, headers=headers, params=params, files=files)
+
+        if response.status_code == 200:
+            logger.info(f"File sent successfully to {phone_number}")
+            return response.json()
+        else:
+            logger.error(f"Failed to send file. Status code: {response.status_code}, Response: {response.text}")
+            return {"error": f"Status code {response.status_code}", "response": response.text}
+
+    except FileNotFoundError:
+        logger.exception(f"Image file not found at path: {image_path}")
+        return {"error": "Image file not found", "path": image_path}
+
+    except requests.exceptions.RequestException as e:
+        logger.exception(f"Exception occurred while sending image: {e}")
         return {"error": str(e)}
 
 

@@ -12,7 +12,6 @@ def wati_webhook():
         print('Incoming webhook data:', data)
 
         response = handle_wati_webhook(data)
-        print(">>>>>>>>>>>>response>>>>>>>>>>>>>>>",response)
         return jsonify(response), 200
     except Exception as e:
         logging.error(f"Unhandled webhook exception: {str(e)}")

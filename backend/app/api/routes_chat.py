@@ -1,8 +1,9 @@
 import os
 import logging
+import tempfile
 from flask import Blueprint, request, jsonify
 # from app.services.wati_service import send_whatsapp_message , get_whatsapp_messages
-from app.services.wati_api_service import send_whatsapp_message_v2 , get_whatsapp_messages_v2
+from app.services.wati_api_service import send_whatsapp_message_v2, get_whatsapp_messages_v2, send_whatsapp_image_v2
 from app.services.vectordb_retrive import query_pinecone_index
 from app.services.genai_response import handle_user_query
 
@@ -15,9 +16,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 chat_bp = Blueprint("chat", __name__)
-
-BASE_URL = "https://app-server.wati.io"
-API_KEY = os.getenv('WATI_APY_KEY')
 
 @chat_bp.route("/ping", methods=["GET"])
 def ping():
@@ -37,6 +35,24 @@ def send_message():
     result = send_whatsapp_message_v2(phone_number, message)
     return jsonify(result)
 
+@chat_bp.route("/send-image", methods=["POST"])
+def send_image():
+    phone_number = request.form.get('phone_number')
+    image_file = request.files.get('image')
+    caption = request.form.get('caption', 'Image from Admin')
+
+    if not phone_number or not image_file:
+        return jsonify({"error": "phone_number and image are required"}), 400
+
+    # Save uploaded image temporarily
+    temp_image_path = f"/tmp/{image_file.filename}"
+    image_file.save(temp_image_path)
+
+    # Call your send function
+    response = send_whatsapp_image_v2(phone_number, temp_image_path, caption)
+
+    return jsonify(response)
+
 
 @chat_bp.route("/receive-message", methods=["POST"])
 def receive_message():
@@ -51,18 +67,6 @@ def receive_message():
         # Extract sender number
         sender_number = data.get("sender_number")
 
-        # if not sender_number:
-        #     return jsonify({"error": "Missing required fields (sender_number)"}), 400
-
-        # result = get_whatsapp_messages(sender_number)
-        # last_user_message = [result["last_user_message"]["text"]] if result["last_user_message"] else []
-        # print(">>>>>>>>>>>>last_user_message>>>>>>>>>>>>")
-        # query_response = query_pinecone(last_user_message[0])
-        # print(">>>>>>>>>>>>query_response>>>>>>>>>>>>",query_response)
-        # exit(0)
-        # genai_response = handle_user_query(query_response)
-        # print(">>>>>>>>>>>>genai_response>>>>>>>>>>>>",genai_response)
-        # app_result = send_whatsapp_message(phone_number="919669092627", message=genai_response.get('answer'))
         if not sender_number:
             logger.error("Missing required fields: sender_number")
             return jsonify({"error": "Missing required fields (sender_number)"}), 400
