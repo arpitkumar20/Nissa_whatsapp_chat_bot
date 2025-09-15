@@ -6,10 +6,12 @@ from app.services.genai_response import handle_user_query
 from app.services.vectordb_retrive import query_pinecone_index
 from app.services.wati_api_service import send_whatsapp_message_v2
 
-from app.models.postgres_sql import PostgreSQL
+# from app.models.postgres_sql import PostgreSQL
+from app.models.mysql_db import MySQL
 
 # ✅ Call insert_message_data after successful processing
-DB = PostgreSQL()
+# DB = PostgreSQL()
+DB = MySQL()
 # Keep track of processed message IDs to prevent duplicate processing
 processed_message_ids = set()
 

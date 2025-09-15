@@ -460,6 +460,10 @@ Domain : aeronautic-showier-marquitta.ngrok-free.app
 ngrok http 5004 --url aeronautic-showier-marquitta.ngrok-free.app
 ngrok http --url=aeronautic-showier-marquitta.ngrok-free.app 5004
 
+# MSQL
+mysql> ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'R00t@1234!';
+
+
 ---
 
 ### 🔹 `backend/Dockerfile`
