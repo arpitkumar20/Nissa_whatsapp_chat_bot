@@ -2,8 +2,8 @@ import logging
 import threading
 from flask import jsonify
 
-# from app.services.genai_response import handle_user_query
-# from app.services.vectordb_retrive import query_pinecone_index
+from app.services.genai_response import handle_user_query
+from app.services.vectordb_retrive import query_pinecone_index
 from app.services.wati_api_service import send_whatsapp_message_v2
 
 from app.models.postgres_sql import PostgreSQL
@@ -38,31 +38,31 @@ def handle_wati_webhook(data: dict) -> dict:
             try:
                 logging.info(f"Processing new message: {message_id}")
 
-                # query_response = query_pinecone_index(message_text)
-                # logging.info("Pinecone query completed.")
+                query_response = query_pinecone_index(message_text)
+                logging.info("Pinecone query completed.")
 
-                # genai_response = handle_user_query(retrieved_context=query_response, query=message_text)
-                # logging.info("GenAI response generated.")
+                genai_response = handle_user_query(retrieved_context=query_response, query=message_text)
+                logging.info("GenAI response generated.")
 
-                send_result = send_whatsapp_message_v2(phone_number=phone_number, message="Hello Testing")
+                send_result = send_whatsapp_message_v2(phone_number=phone_number, message=genai_response)
                 logging.info(f"WhatsApp message send result")
 
-                # filtered_message = {k: v for k, v in send_result['message'].items() if v is not None}
+                filtered_message = {k: v for k, v in send_result['message'].items() if v is not None}
 
                 # Add filtered 'message' dict into response
-                # response['result'] = send_result['result']
-                # response['message'] = filtered_message
-                # response['airesponse'] = genai_response
-                # logging.info("whatsapp message log is going to save into postgressql")
-                # data_to_insert = {
-                #     'status': response.get('status', 'received'),  # Or whatever default you want
-                #     'message': response['message'],
-                #     'airesponse': response['airesponse'],
-                #     'text': message_text
-                # }
+                response['result'] = send_result['result']
+                response['message'] = filtered_message
+                response['airesponse'] = genai_response
+                logging.info("whatsapp message log is going to save into postgressql")
+                data_to_insert = {
+                    'status': response.get('status', 'received'),  # Or whatever default you want
+                    'message': response['message'],
+                    'airesponse': response['airesponse'],
+                    'text': message_text
+                }
 
 
-                insert_result = DB.insert_message_data(send_result)
+                insert_result = DB.insert_message_data(data_to_insert)
                 logging.info(f"Insert result: {insert_result}")
 
             except Exception as e:
