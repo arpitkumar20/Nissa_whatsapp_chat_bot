@@ -603,3 +603,23 @@ curl -X POST http://localhost:8000/api/v1/whatsapp/webhook \
 ```
 
 ```
+
+
+[
+    {
+        "message": "Scraping data from the website was successfully completed and stored in the vector database.",
+        "namespace": "www_raising100x_com_08ca2cfeda5048b69122345c547bda1d"
+    },
+    {
+        "message": "Scraping data from the website was successfully completed and stored in the vector database.",
+        "namespace": "www_nzminds_com_9115ff31e1e74c49b9364b9139f2643f"
+    },
+    {
+        "message": "Scraping data from the website was successfully completed and stored in the vector database.",
+        "namespace": "pkghospital_in_e33ecb478bfe4d549558ff53ec083563"
+    },
+    {
+        "message": "Scraping data from the website was successfully completed and stored in the vector database.",
+        "namespace": null
+    }
+]

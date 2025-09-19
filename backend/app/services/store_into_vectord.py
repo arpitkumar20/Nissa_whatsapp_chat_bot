@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Step 1: Load JSON file
 logger.info("Loading data from JSON file...")
-with open('/home/user/Nissa_whatsapp_chat_bot/backend/rag_data/www.nzminds.com/chunks/embedding_ready.json', 'r', encoding='utf-8') as f:
+with open('/home/user/Nissa_whatsapp_chat_bot/backend/rag_data/www.apple.com/chunks/embedding_ready.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 texts = data.get("texts", [])

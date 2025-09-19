@@ -22,3 +22,10 @@
 #       - pgdata:/var/lib/postgresql/data
 # volumes:
 #   pgdata:
+{
+    "namespace": [
+        "www_raising100x_com_47e787e394cf42cbafeaf6e04974d16a",
+        "www_nzminds_com_cf0ae77f629d4df98c8bd45fa8fb9dc1",
+        "pkghospital_in_950d325784c24df48e04d5fd4f4e7d29"
+    ]
+}

@@ -7,6 +7,7 @@ from typing import List
 from urllib.parse import urlparse, urljoin
 
 from dotenv import load_dotenv
+import requests
 load_dotenv()
 
 from langchain_community.document_loaders import (
@@ -45,6 +46,65 @@ class WebsiteProcessor:
         self.chunks = []
 
         logger.info(f"Initialized processor for {website_url}")
+
+
+    def get_website_info(self) -> dict:
+        """
+        Fetch website details (title, description, keywords, main heading).
+        Works for any type of website without hardcoded classification.
+        """
+        try:
+            resp = requests.get(self.website_url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+            soup = BeautifulSoup(resp.text, "html.parser")
+
+            # Title
+            title = soup.title.string.strip() if soup.title else "No Title Found"
+
+            # Meta description
+            description = ""
+            desc_tag = soup.find("meta", attrs={"name": "description"}) or soup.find("meta", attrs={"property": "og:description"})
+            if desc_tag and desc_tag.get("content"):
+                description = desc_tag["content"].strip()
+
+            # Meta keywords
+            keywords = ""
+            keywords_tag = soup.find("meta", attrs={"name": "keywords"})
+            if keywords_tag and keywords_tag.get("content"):
+                keywords = keywords_tag["content"].strip()
+
+            # First heading (h1)
+            heading = ""
+            h1_tag = soup.find("h1")
+            if h1_tag:
+                heading = h1_tag.get_text(strip=True)
+
+            # Fallback if description is empty → take first paragraph
+            if not description:
+                first_p = soup.find("p")
+                if first_p:
+                    description = first_p.get_text(strip=True)[:200]  # limit length
+
+            website_info = {
+                "url": self.website_url,
+                "title": title,
+                "description": description,
+                "keywords": keywords,
+                "main_heading": heading
+            }
+
+            # --- Logging output ---
+            logger.info(f"Website Info Extracted → Title: {title}, Heading: {heading}, Description: {description[:80]}...")
+            return website_info
+
+        except Exception as e:
+            logger.error(f"Failed to fetch website info: {e}")
+            return {
+                "url": self.website_url,
+                "title": "Unknown",
+                "description": "Unknown",
+                "keywords": "",
+                "main_heading": ""
+            }
 
     def _extract_all_links_spa(self, max_pages=200, headless=True) -> List[str]:
         """Extract internal links with dynamic JS crawling using Playwright"""

@@ -23,46 +23,64 @@ llm = ChatGoogleGenerativeAI(
     google_api_key=GOOGLE_API_KEY
 )
 
-# System prompt to guide GenAI
+'''
+CORRECT
+
+'''
+
+
 # SYSTEM_PROMPT = """
-# You are Nisaa, a helpful hospital assistant.
+# You are a helpful retrieval-augmented chatbot.
 
-# Your role:
-# - Use the provided context (from Pinecone DB) to answer user questions about hospital and doctors.
-# - The context may include doctor names, specialties, timings, availability, hospital details, etc.
-
-# Response rules:
-# 1. Keep answers short (2–3 sentences) and friendly.
-# 2. Always answer using only the retrieved context.
-# 3. If the query is about a list (e.g., "list of cardiologists"), return a clean, simple list.
-# 4. If context does not provide enough information, politely ask the user for clarification instead of guessing.
-# 5. Do not invent or assume any details not present in the context.
-
-# Example behaviors:
-# - User: "Which doctors are available for cardiology?"  
-#   Nisaa: "Here are the cardiologists: Dr. A Sharma (Mon–Fri, 10am–2pm), Dr. B Khan (Sat–Sun, 4pm–8pm)."
-
-# - User: "Tell me about Dr. Meera."  
-#   Nisaa: "Dr. Meera is a pediatric specialist available Mon–Sat, 9am–1pm. Do you want appointment details?"
+# 1. Use ONLY the provided "Retriever results" context. Do NOT use outside knowledge or invent facts.
+# 2. Provide a single, concise answer that directly addresses the user’s question.
+# 3. Do NOT include "Evidence:", "Need more info:", "Confidence:", or similar sections.
+# 4. If the context lacks sufficient information, reply politely asking the user to rephrase or provide more details.
+# 5. Keep your answers short, clear, and friendly (≤50 words).
 # """
 
-SYSTEM_PROMPT = """
-You are chatbot, an intelligent assistant. Your role is to answer user queries strictly based on the provided context, ensuring responses are accurate, relevant, and fully supported by that context.
+# qa_prompt = ChatPromptTemplate.from_messages([
+#     ("system", SYSTEM_PROMPT),
+#     ("human", """Retriever results (top K):
+# {context}
 
-Instructions:
-- Answer strictly using the provided context only.
-- Ensure every answer matches the user query exactly and is fully supported by the context.
-- Keep responses short, clear, and friendly.
-- If the context does not provide enough information, politely ask the user for clarification instead of guessing.
-- Never add, assume, or invent details not present in the context.
+# User question:
+# {query}
+
+# INSTRUCTIONS FOR YOU:
+# - Answer concisely using ONLY the Retriever results above.
+# - If the context is insufficient, reply with a polite request for clarification or more details.
+# - Output only the final answer.
+# """)
+# ])
+
+
+SYSTEM_PROMPT = """
+You are a retrieval-augmented chatbot.
+
+1. Use ONLY the provided "Retriever results" and the conversation history. Do NOT use outside knowledge or invent facts.
+2. Always give a clear, concise, and direct answer to the user’s query.
+3. Prefer exact answers over generic explanations.
+4. If the context and history lack sufficient information, politely ask the user for clarification.
+5. Keep answers short, precise, and user-friendly (≤40 words).
 """
 
-
-# Define a simple prompt template
 qa_prompt = ChatPromptTemplate.from_messages([
     ("system", SYSTEM_PROMPT),
-    ("human", "Relevant Context:\n{context}\n\nUser Question:\n{query}")
+    ("human", """Retriever results (top K):
+{context}
+
+User question:
+{query}
+
+INSTRUCTIONS FOR YOU:
+- Answer directly using ONLY the retriever results.
+- If information is missing, ask the user to clarify instead of guessing.
+- Output only the final, concise answer.
+""")
 ])
+
+
 
 # Core function to handle the query
 def handle_user_query(retrieved_context: str, query: str) -> str:

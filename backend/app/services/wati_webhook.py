@@ -5,13 +5,14 @@ from flask import jsonify
 from app.services.genai_response import handle_user_query
 from app.services.vectordb_retrive import query_pinecone_index
 from app.services.wati_api_service import send_whatsapp_message_v2
+from app.services.select_namespace import run_namespace_selector
 
-# from app.models.postgres_sql import PostgreSQL
-from app.models.mysql_db import MySQL
+from app.models.postgresql_db import PostgreSQL
+# from app.models.mysql_db import MySQL
 
 # ✅ Call insert_message_data after successful processing
-# DB = PostgreSQL()
-DB = MySQL()
+DB = PostgreSQL()
+# DB = MySQL()
 # Keep track of processed message IDs to prevent duplicate processing
 processed_message_ids = set()
 
@@ -40,7 +41,13 @@ def handle_wati_webhook(data: dict) -> dict:
             try:
                 logging.info(f"Processing new message: {message_id}")
 
-                query_response = query_pinecone_index(message_text)
+                # ------------------------------
+                # Select namespace dynamically
+                # ------------------------------
+                namespace = run_namespace_selector(message_text)
+                logging.info(f"Selected namespace: {namespace}")
+
+                query_response = query_pinecone_index(query_text=message_text, namespace=namespace)
                 logging.info("Pinecone query completed.")
 
                 genai_response = handle_user_query(retrieved_context=query_response, query=message_text)
@@ -64,7 +71,8 @@ def handle_wati_webhook(data: dict) -> dict:
                 }
 
 
-                insert_result = DB.insert_message_data(data_to_insert)
+                # insert_result = DB.insert_message_data(data_to_insert)
+                insert_result = DB.insert_rds_message_data(data_to_insert)
                 logging.info(f"Insert result: {insert_result}")
 
             except Exception as e:
